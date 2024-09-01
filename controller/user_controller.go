@@ -1,22 +1,30 @@
 package controller
 
-import "github.com/labstack/echo/v4"
+import (
+	"gotodo-app/model"
+	"gotodo-app/usecase"
+	"net/http"
+	"os"
+	"time"
+
+	"github.com/labstack/echo/v4"
+)
 
 type IUserController interface {
-	SignUp(c echo.Contect) error // echoで定義されてるContext型
-	LogIn(c echo.Contect) error
-	LogOut(c echo.Contect) error
+	SignUp(c echo.Context) error // 引数：echoで定義されてるContext型、返り値：error型
+	LogIn(c echo.Context) error
+	LogOut(c echo.Context) error
 }
 
-type UserController struct {
-	uu usecase.IUserUsecase	
+type userController struct {
+	uu usecase.IUserUsecase
 }
 
-func NewUserController(uu usecaseIUserUsecase) IUserController {
+func NewUserController(uu usecase.IUserUsecase) IUserController { // IUserController型の返り値
 	return &userController{uu}
 }
 
-func (uc *userController) SignUp(c echo.Contect) error {
+func (uc *userController) SignUp(c echo.Context) error { //　引数はインターフェースと同じにする
 	user := model.User{}
 	if err := c.Bind(&user); err != nil {
 		return c.JSON(http.StatusBadRequest, err.Error())
@@ -24,6 +32,8 @@ func (uc *userController) SignUp(c echo.Contect) error {
 	userRes, err := uc.uu.SignUp(user)
 	if err != nil {
 		return c.JSON(http.StatusCreated, userRes)
+	}
+	return c.JSON(http.StatusCreated, userRes)
 }
 
 func (uc *userController) LogIn(c echo.Context) error {
@@ -35,21 +45,21 @@ func (uc *userController) LogIn(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
-	cokkie := new(http.Cokkie)
-	cokkie.Name = "token"
-	cokkie.Value = tokenString
-	cokkie.Expires = time.Now().Add(24 * time.Hour)
-	cokkie.Path = "/"
-	cokkie.Domain = os.Getenv("API_DOMAIN")
+	cookie := new(http.Cookie)
+	cookie.Name = "token"
+	cookie.Value = tokenString
+	cookie.Expires = time.Now().Add(24 * time.Hour)
+	cookie.Path = "/"
+	cookie.Domain = os.Getenv("API_DOMAIN")
 	// cookie.secure = true
-	cokkie.HttpOnly = true
-	cokkie.SameSite = http.SameSiteNoneMode
+	cookie.HttpOnly = true
+	cookie.SameSite = http.SameSiteNoneMode
 	c.SetCookie(cookie)
 	return c.NoContent(http.StatusOK)
 }
 
 func (uc *userController) LogOut(c echo.Context) error {
-	cookie *= new(http.Cookie)
+	cookie := new(http.Cookie)
 	cookie.Name = "token"
 	cookie.Value = ""
 	cookie.Expires = time.Now()
